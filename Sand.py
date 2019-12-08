@@ -17,13 +17,15 @@ elasticity = 180
 def bounce(n):
 	return int((-n * elasticity) / 256)
 
+display = None
+
 class Bitmap:
 	def __init__(self, w, h):
 		self.w = w
 		self.h = h
 		self.bitmap = bytearray(int(w*h))
 	def get(self, x, y):
-		#y_mask = y & 7
+		#y_mask = 1 << (y & 7)
 		#y_stride = y >> 3
 		try:
 			#v = self.bitmap[x + y_stride * self.w]
@@ -34,15 +36,19 @@ class Bitmap:
 			print("OUT OF RANGE %d x %d" % (x, y))
 			raise
 	def set(self, x, y):
-		#y_mask = y & 7
+		#y_mask = 1 << (y & 7)
 		#y_stride = y >> 3
 		#self.bitmap[x + y_stride * self.w] |= y_mask
 		self.bitmap[x + y * self.w] = 1
+		if display:
+			display.pixel(x,y, 1)
 	def clear(self, x, y):
-		#y_mask = y & 7
+		#y_mask = 1 << (y & 7)
 		#y_stride = y >> 3
 		#self.bitmap[x + y_stride * self.w] &= ~y_mask
 		self.bitmap[x + y * self.w] = 0
+		if display:
+			display.pixel(x,y, 0)
 
 class Grain:
 	def __init__(self, w, h, bitmap):
@@ -73,7 +79,7 @@ class Grain:
 		#// clipped as a 2D vector (not separately-limited X & Y) so that
 		#// diagonal movement isn't faster than horizontal/vertical.
 		if v2 > 65535:
-			v = sqrt(v2)
+			v = int(sqrt(v2))
 			self.vx = int(256 * self.vx / v)
 			self.vy = int(256 * self.vy / v)
 
@@ -208,17 +214,49 @@ class Sand:
 		# Apply 2D accel vector to grain velocities...
 		for grain in self.grains:
 			grain.update_vel(ax, ay, az2)
-
-		# Update the position, checking for collisions in the bitmap
-		for grain in self.grains:
 			grain.update_pos(self.bitmap)
 
+		# Update the position, checking for collisions in the bitmap
+		#for grain in self.grains:
+
+def demo(n=128):
+	import machine
+	import ssd1306
+	import framebuf
+	global display
+
+	w = 128
+	h = 32
+
+	i2c = machine.I2C(-1, machine.Pin(5), machine.Pin(4))
+	display = ssd1306.SSD1306_I2C(w, h, i2c)
+
+	s = Sand(w, h, n)
+	#fbuf = framebuf.FrameBuffer(s.bitmap.bitmap, w, h, framebuf.MONO_VLSB)
+
+	from math import sin, cos
+	t = 0
+
+	while True:
+		ax = 1000 * sin(t)
+		ay = 500 * cos(t)
+		t += 0.005
+		s.update(ax, ay, 100)
+		#display.blit(fbuf, 0, 0)
+		display.show()
+
+
 if __name__ == "__main__":
+	from math import sin, cos
 	s = Sand(128, 32, 256)
+	t = 0
 	
 	while True:
-		s.update(1810, 00, 100)
-		print('%c[H' % (27))
+		ax = 2000 * sin(t)
+		ay = 1000 * cos(t)
+		t += 0.005
+		s.update(ax, ay, 100)
+		print('%c[H %.0f x %.0f' % (27, ax, ay))
 
 		for y in range(0,s.h):
 			for x in range(0,s.w):
