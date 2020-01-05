@@ -216,6 +216,9 @@ function setup()
 	let win_height = windowHeight;
 
 	createCanvas(win_width, win_height);
+	frameRate(60)
+	pixelDensity(1)
+
 	if (win_width < win_height)
 	{
 		ph = 32
@@ -229,9 +232,8 @@ function setup()
 	w = pw << 8
 	h = ph << 8
 	bitmap = new Uint8Array(pw*ph)
+
 	grains = []
-
-
 	for(let i = 0 ; i < 256 ; i++)
 		grains.push(new Grain());
 
@@ -243,10 +245,25 @@ function windowResized()
 	setup()
 }
 
+let wake_request;
+
 function mousePressed()
 {
 	let fs = fullscreen()
-	fullscreen(!fs)
+	if (fs)
+	{
+		// already full screen, turn it off
+		// and cancel any wakelock
+		fullscreen(false)
+		if (wake_request)
+			wake_request.cancel()
+	} else {
+		// go full screen and request a wake lock
+		fullscreen(true)
+		navigator.getWakeLock("screen").then(function(wakeLock) {
+			wake_request = wakeLock.createRequest();
+		});
+	}
 	reinit = true
 }
 
@@ -315,9 +332,10 @@ function draw()
 		grain.update_pos()
 
 		//fill(128,0,255);
+		let v = sqrt(grain.vx*grain.vx + grain.vy*grain.vy);
 		fill(
 			256 * grain.x / w + 256 * (h - grain.y) / h,
-			0,
+			v / 2,
 			256 * (w - grain.x) / w + 256 * grain.y / h,
 			//120
 		);
@@ -326,8 +344,8 @@ function draw()
 		ellipse(
 			(grain.x/256)*pscale,
 			(grain.y/256)*pscale,
-			pscale,
-			pscale
+			v/64 + pscale*0.8,
+			v/64 + pscale*0.8,
 		)
 /*
 		push()
