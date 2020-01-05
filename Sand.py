@@ -24,17 +24,13 @@ class Bitmap:
 		self.w = w
 		self.h = h
 		self.bitmap = bytearray(int(w*h))
+	@micropython.native
 	def get(self, x, y):
 		#y_mask = 1 << (y & 7)
 		#y_stride = y >> 3
-		try:
-			#v = self.bitmap[x + y_stride * self.w]
-			#return (v & y_mask) != 0
-			v = self.bitmap[x + y * self.w]
-			return v != 0
-		except:
-			print("OUT OF RANGE %d x %d" % (x, y))
-			raise
+		v = self.bitmap[x + y * self.w]
+		return v != 0
+	#@micropython.native
 	def set(self, x, y):
 		#y_mask = 1 << (y & 7)
 		#y_stride = y >> 3
@@ -42,6 +38,7 @@ class Bitmap:
 		self.bitmap[x + y * self.w] = 1
 		if display:
 			display.pixel(x,y, 1)
+	#@micropython.native
 	def clear(self, x, y):
 		#y_mask = 1 << (y & 7)
 		#y_stride = y >> 3
@@ -68,6 +65,7 @@ class Grain:
 			bitmap.set(self.px, self.py)
 			break
 
+	#@micropython.native
 	def update_vel(self, ax, ay, az):
 		self.vx += ax + rand(0,az)
 		self.vy += ay + rand(0,az)
@@ -84,6 +82,7 @@ class Grain:
 			self.vy = int(256 * self.vy / v)
 
 
+	#@micropython.native
 	def update_pos(self, bitmap):
 		#// ...then update position of each grain, one at a time, checking for
 		#// collisions and having them react.  This really seems like it shouldn't
