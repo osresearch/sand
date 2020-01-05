@@ -288,7 +288,7 @@ function draw()
 	let ax = rotationY
 	let ay = rotationX
 	let az = accelerationZ
-	if (ax == 0 && ay == 0 && az == 0)
+	if (!ax && !ay && !az)
 	{
 		ax = (mouseX - width/2) * 5 / width;
 		ay = (mouseY - height/2) * 5 / height;
